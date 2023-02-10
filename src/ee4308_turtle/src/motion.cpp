@@ -228,7 +228,7 @@ int main(int argc, char **argv)
                 ROS_INFO("TMOTION: Pos(%7.3f, %7.3f)  Ang(%6.3f)", //motion filtered positions
                          pos_rbt.x, pos_rbt.y, ang_rbt);
                 
-                ROS_INFO("TMOTION: Internal Odom Pos(%7.3f, %7.3f)  Ang(%6.3f)",  //Print internal odom stuff (not necessary tbh)
+                ROS_INFO("TMOTION: Internal Odom Pos(%7.3f, %7.3f)  Ang(%6.3f)",  //Print internal odom stuff (not necessary tbh, not working atm)
                          msg_odom.pose.pose.position.x, msg_odom.pose.pose.position.y, atan2(siny_cosp, cosy_cosp));
                 
                 ROS_INFO("TMOTION: Error Pos(%7.3f)  Ang(%6.3f)",  //print errors between internal positions and motion filter positions
