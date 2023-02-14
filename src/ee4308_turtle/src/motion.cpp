@@ -136,6 +136,10 @@ int main(int argc, char **argv)
         ros::Subscriber sub_wheels = nh.subscribe("joint_states", 1, &cbWheels);
         ros::Subscriber sub_imu = nh.subscribe("imu", 1, &cbImu);
 
+        // subscribes to odom topic --> is the exact simulated position in gazebo; when used in real life, is derived from wheel encoders (no imu).
+        // Subscriber
+        ros::Subscriber sub_odom = nh.subscribe("odom", 1, &cbOdom);
+
         // initialise rate
         ros::Rate rate(motion_iter_rate); // higher rate for better estimation
 
@@ -187,6 +191,7 @@ int main(int argc, char **argv)
             wheel_r_previous = wheel_r;
             wheel_l_previous = wheel_l;
             double imu_lin_vel = lin_vel + imu_lin_acc*dt;
+
             lin_vel = weight_odom_v*vt_odom + weight_imu_v*imu_lin_vel;
             ang_vel = weight_odom_w*wt_odom + weight_imu_w*imu_ang_vel;
 
@@ -213,6 +218,7 @@ int main(int argc, char **argv)
             pose_rbt.pose.orientation.z = sin(ang_rbt / 2);
             pub_pose.publish(pose_rbt);
 
+            
             // get ang_rbt from quaternion
             auto &q = msg_odom.pose.pose.orientation;
             double siny_cosp = 2 * (q.w * q.z + q.x * q.y);
@@ -228,7 +234,7 @@ int main(int argc, char **argv)
                 ROS_INFO("TMOTION: Pos(%7.3f, %7.3f)  Ang(%6.3f)", //motion filtered positions
                          pos_rbt.x, pos_rbt.y, ang_rbt);
                 
-                ROS_INFO("TMOTION: Internal Odom Pos(%7.3f, %7.3f)  Ang(%6.3f)",  //Print internal odom stuff (not necessary tbh, not working atm)
+                ROS_INFO("TMOTION: Internal Odom Pos(%7.3f, %7.3f)  Ang(%6.3f)",  //Print internal odom stuff
                          msg_odom.pose.pose.position.x, msg_odom.pose.pose.position.y, atan2(siny_cosp, cosy_cosp));
                 
                 ROS_INFO("TMOTION: Error Pos(%7.3f)  Ang(%6.3f)",  //print errors between internal positions and motion filter positions
