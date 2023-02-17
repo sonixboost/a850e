@@ -95,9 +95,9 @@ int main(int argc, char **argv)
                 double siny_cosp = 2 * (q.w * q.z + q.x * q.y);
                 double cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z);
 
-                ROS_INFO("TMOTION: Pos(%7.3f, %7.3f)  Ang(%6.3f)  FVel(%6.3f)  AVel(%6.3f)",
+                /*ROS_INFO("TMOTION: Pos(%7.3f, %7.3f)  Ang(%6.3f)  FVel(%6.3f)  AVel(%6.3f)",
                          pose_rbt.pose.position.x, pose_rbt.pose.position.y, atan2(siny_cosp, cosy_cosp),
-                         msg_odom.twist.twist.linear.x, msg_odom.twist.twist.angular.z);
+                         msg_odom.twist.twist.linear.x, msg_odom.twist.twist.angular.z);*/
             }
 
             rate.sleep();
@@ -135,9 +135,6 @@ int main(int argc, char **argv)
         // Subscribers
         ros::Subscriber sub_wheels = nh.subscribe("joint_states", 1, &cbWheels);
         ros::Subscriber sub_imu = nh.subscribe("imu", 1, &cbImu);
-
-        // subscribes to odom topic --> is the exact simulated position in gazebo; when used in real life, is derived from wheel encoders (no imu).
-        // Subscriber
         ros::Subscriber sub_odom = nh.subscribe("odom", 1, &cbOdom);
 
         // initialise rate
@@ -227,18 +224,18 @@ int main(int argc, char **argv)
             double error_x = msg_odom.pose.pose.position.x - pos_rbt.x; //Calculating errors
             double error_y = msg_odom.pose.pose.position.y - pos_rbt.y;
             double error_pos = sqrt(error_x * error_x + error_y * error_y);
-            double error_ang = atan2(siny_cosp, cosy_cosp) - limit_angle(ang_rbt);
+            double error_ang = limit_angle(atan2(siny_cosp, cosy_cosp) - ang_rbt);
 
             if (verbose)
             {
-                ROS_INFO("TMOTION: Pos(%7.3f, %7.3f)  Ang(%6.3f)", //motion filtered positions
+                /*ROS_INFO("TMOTION: Pos(%7.3f, %7.3f)  Ang(%6.3f)", //motion filtered positions
                          pos_rbt.x, pos_rbt.y, ang_rbt);
                 
                 ROS_INFO("TMOTION: Internal Odom Pos(%7.3f, %7.3f)  Ang(%6.3f)",  //Print internal odom stuff
                          msg_odom.pose.pose.position.x, msg_odom.pose.pose.position.y, atan2(siny_cosp, cosy_cosp));
                 
                 ROS_INFO("TMOTION: Error Pos(%7.3f)  Ang(%6.3f)",  //print errors between internal positions and motion filter positions
-                         error_pos, error_ang);
+                         error_pos, error_ang);*/
 
             }
 

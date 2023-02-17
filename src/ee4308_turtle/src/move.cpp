@@ -104,6 +104,43 @@ int main(int argc, char **argv)
     double prev_time = ros::Time::now().toSec();
 
     ////////////////// DECLARE VARIABLES HERE //////////////////
+    //double error_lin = dist_euc(target.y, pos_rbt.y, target.x, pos_rbt.x); //initial positional error
+    double error_lin = target.x - pos_rbt.x; //linear experiment
+    double sum_error_lin = 0;
+    double prev_error_lin = error_lin;
+    double pkr = 0; //proportion component, positional
+    double ikr = 0; //integral component, positional
+    double dkr = 0; //differential component, positional
+
+    double error_ang = limit_angle(atan2(target.y - pos_rbt.y,target.x - pos_rbt.x) - ang_rbt); //initial angular error
+    double sum_error_ang = 0;
+    double prev_error_ang = error_ang;
+    double pko = 0; //proportion component, angular
+    double iko = 0; //integral component, angular
+    double dko = 0; //differential component, angular
+
+    double prev_cmd_lin_vel = 0;
+    double prev_cmd_ang_vel = 0;
+    double akr; //Estimated acceleration in control signal at k.
+    double akr_sat; //Saturated acceleration at k.
+    double ako;
+    double ako_sat;
+
+    //experiments
+    bool rise_time_ang1 = false;
+    bool rise_time_ang2 = false;
+    double time_start_ang;
+    double time_end_ang;
+    double time_diff_ang;
+    double max_os_ang = 0;
+
+    double initial_error_lin = error_lin;
+    bool rise_time_lin1 = false;
+    bool rise_time_lin2 = false;
+    double time_start_lin;
+    double time_end_lin;
+    double time_diff_lin;
+    double max_os_lin = 0;
 
     ROS_INFO(" TMOVE : ===== BEGIN =====");
 
@@ -121,16 +158,87 @@ int main(int argc, char **argv)
             prev_time += dt;
 
             ////////////////// MOTION CONTROLLER HERE //////////////////
+            error_ang = limit_angle(atan2(target.y - pos_rbt.y,target.x - pos_rbt.x) - ang_rbt);
+            sum_error_ang += error_ang;
+            pko = Kp_ang * error_ang;
+            iko = Ki_ang * sum_error_ang * dt;
+            dko = Kd_ang * (error_ang - prev_error_ang)/dt;
+            cmd_ang_vel = pko + iko + dko; 
+            prev_error_ang = error_ang;
 
+            error_lin = sqrt((target.y - pos_rbt.y)*(target.y - pos_rbt.y) + (target.x - pos_rbt.x)*(target.x - pos_rbt.x));
+            //error_lin = target.x - pos_rbt.x; //linear experiment
+            sum_error_lin += error_lin;
+            pkr = Kp_lin * error_lin;
+            ikr = Ki_lin * sum_error_lin * dt;
+            dkr = Kd_lin * (error_lin - prev_error_lin)/dt;
+            cmd_lin_vel  = cos(error_ang/2)*cos(error_ang/2)*(pkr + ikr + dkr); //equation 9 with coupling
+            //cmd_lin_vel  = pkr + ikr + dkr; 
+            prev_error_lin = error_lin;
+
+            akr = (cmd_lin_vel - prev_cmd_lin_vel)/dt;
+            akr_sat = sat(akr, max_lin_acc);
+            cmd_lin_vel = sat(prev_cmd_lin_vel + akr*dt, max_lin_vel);
+            prev_cmd_lin_vel = cmd_lin_vel;
+
+            ako = (cmd_ang_vel - prev_cmd_ang_vel)/dt;
+            ako_sat = sat(ako, max_ang_acc);
+            cmd_ang_vel = sat(prev_cmd_ang_vel + ako*dt, max_ang_vel);
+            prev_cmd_ang_vel = cmd_ang_vel;
+
+
+            //experiments
+            /*if (abs(limit_angle(ang_rbt)) >= 0.1*M_PI && !rise_time_ang1) //robot rotated 10%
+            {
+                time_start_ang = prev_time;
+                rise_time_ang1 = true;
+            }
+            if (abs(limit_angle(ang_rbt)) >= 0.9*M_PI && !rise_time_ang2) //robot rotated 90%
+            {
+                time_end_ang = prev_time;
+                rise_time_ang2 = true;
+            }
+            if (error_ang <= 0) //robot has reached/overshoot goal
+            {
+                if (max_os_ang <= abs(error_ang)) //obtaining max overshoot angle value
+                {
+                    max_os_ang = abs(error_ang);
+                }
+            }
+            time_diff_ang = time_end_ang - time_start_ang; 
+            
+            if ((target.x - pos_rbt.x) <= 0.9*0.2 && !rise_time_lin1) //robot moved 10%
+            {
+                time_start_lin = prev_time;
+                rise_time_lin1 = true;
+            }
+            if ((target.x - pos_rbt.x) <= 0.1*0.2 && !rise_time_lin2) //robot moved 90%
+            {
+                time_end_lin = prev_time;
+                rise_time_lin2 = true;
+            }
+            if (error_lin <= 0) //robot has reached/overshoot goal
+            {
+                if (max_os_lin <= (pos_rbt.x - target.x)) //obtaining max overshoot distance value
+                {
+                    max_os_lin = pos_rbt.x - target.x;
+                }
+            }
+            time_diff_lin = time_end_lin - time_start_lin;*/
+            
             // publish speeds
             msg_cmd.linear.x = cmd_lin_vel;
-            msg_cmd.angular.z = cmd_ang_vel;
+            msg_cmd.angular.z = cmd_ang_vel; 
             pub_cmd.publish(msg_cmd);
 
             // verbose
             if (verbose)
             {
                 ROS_INFO(" TMOVE :  FV(%6.3f) AV(%6.3f)", cmd_lin_vel, cmd_ang_vel);
+                /*ROS_INFO(" experiment_ang :  time taken(%6.3f) error_ang(%6.3f, %6.3f) max_os(%6.3f)",
+                time_diff_ang, limit_angle(ang_rbt), error_ang, max_os_ang);
+                ROS_INFO(" experiment_lin :  time taken(%6.3f) lin(%6.3f) err_lin %6.3f) max_os(%6.3f)",
+                time_diff_lin, initial_error_lin, pos_rbt.x, max_os_lin);*/
             }
 
             // wait for rate
