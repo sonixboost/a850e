@@ -104,8 +104,8 @@ int main(int argc, char **argv)
     double prev_time = ros::Time::now().toSec();
 
     ////////////////// DECLARE VARIABLES HERE //////////////////
-    //double error_lin = dist_euc(target.y, pos_rbt.y, target.x, pos_rbt.x); //initial positional error
-    double error_lin = target.x - pos_rbt.x; //linear experiment
+    double error_lin = dist_euc(target.y, pos_rbt.y, target.x, pos_rbt.x); //initial positional error
+    //double error_lin = target.x - pos_rbt.x; //linear experiment
     double sum_error_lin = 0;
     double prev_error_lin = error_lin;
     double pkr = 0; //proportion component, positional
